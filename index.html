@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin UI — Brand & Segment</title>
+  <!-- Tailwind CDN (play style, para desenvolvimento). Em produção gere o CSS. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Optional: tiny Alpine for reatividade / modals (small) -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+  <div class="max-w-7xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold">Brand & Segment Manager</h1>
+        <p class="text-sm text-slate-500">Front-end rápido gerado para sua OpenAPI — UX focado em usabilidade e fluxo de trabalho.</p>
+      </div>
+      <div class="text-right">
+        <div class="text-xs text-slate-500">API base</div>
+        <input id="apiBaseInput" class="border rounded px-3 py-1 text-sm w-80" value="https://quarkus-render-tsi-victorfstedesco.onrender.com" />
+        <button id="applyApiBase" class="ml-2 bg-sky-600 text-white px-3 py-1 rounded text-sm">Aplicar</button>
+      </div>
+    </header>
+
+    <!-- Main grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Brands panel -->
+      <section class="bg-white shadow rounded p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium">Marcas (Brand)</h2>
+          <div class="flex items-center gap-2">
+            <input id="brandSearch" type="search" placeholder="Pesquisar marcas..." class="border rounded px-3 py-1 text-sm" />
+            <button id="searchBrandBtn" class="px-3 py-1 bg-slate-200 rounded text-sm">Buscar</button>
+            <button id="openBrandCreate" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Nova</button>
+          </div>
+        </div>
+
+        <div id="brandsList" class="space-y-3 min-h-[140px]">
+          <!-- Lista preenchida por JS -->
+          <div class="text-sm text-slate-500">Carregando marcas...</div>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between">
+          <div class="text-sm text-slate-500" id="brandsMeta"></div>
+          <div class="flex gap-2">
+            <button id="prevBrands" class="px-3 py-1 bg-slate-100 rounded text-sm">Anterior</button>
+            <button id="nextBrands" class="px-3 py-1 bg-slate-100 rounded text-sm">Próxima</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Segments panel -->
+      <section class="bg-white shadow rounded p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium">Segmentos (Segment)</h2>
+          <div class="flex items-center gap-2">
+            <input id="segmentSearch" type="search" placeholder="Pesquisar segmentos..." class="border rounded px-3 py-1 text-sm" />
+            <button id="searchSegmentBtn" class="px-3 py-1 bg-slate-200 rounded text-sm">Buscar</button>
+            <button id="openSegmentCreate" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Novo</button>
+          </div>
+        </div>
+
+        <div id="segmentsList" class="space-y-3 min-h-[140px]">
+          <div class="text-sm text-slate-500">Carregando segmentos...</div>
+        </div>
+
+        <div class="mt-4 flex items-center justify-between">
+          <div class="text-sm text-slate-500" id="segmentsMeta"></div>
+          <div class="flex gap-2">
+            <button id="prevSegments" class="px-3 py-1 bg-slate-100 rounded text-sm">Anterior</button>
+            <button id="nextSegments" class="px-3 py-1 bg-slate-100 rounded text-sm">Próxima</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Footer with quick tips -->
+    <footer class="mt-6 text-sm text-slate-500">
+      Dica UX: coloque ações primárias (criar/editar) em cor de destaque e mantenha o fluxo de confirmação (modal) para exclusões.
+    </footer>
+  </div>
+
+  <!-- Modal (create/edit) - AlpineJS -->
+  <div x-data="modal()" x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40" @click="close()"></div>
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 z-10">
+      <div class="flex items-start justify-between">
+        <h3 class="text-lg font-semibold" x-text="title"></h3>
+        <button class="text-slate-400 hover:text-slate-600" @click="close()">✕</button>
+      </div>
+
+      <form @submit.prevent="submit()" class="mt-4 space-y-4">
+        <template x-if="type === 'brand'">
+          <div>
+            <label class="text-sm text-slate-700">Nome</label>
+            <input x-model="form.name" required class="mt-1 block w-full border rounded px-3 py-2" />
+            <label class="text-sm text-slate-700 mt-2">Descrição</label>
+            <textarea x-model="form.description" class="mt-1 block w-full border rounded px-3 py-2" rows="3"></textarea>
+          </div>
+        </template>
+
+        <template x-if="type === 'segment'">
+          <div>
+            <label class="text-sm text-slate-700">Nome</label>
+            <input x-model="form.name" required class="mt-1 block w-full border rounded px-3 py-2" />
+            <label class="text-sm text-slate-700 mt-2">Descrição</label>
+            <textarea x-model="form.description" class="mt-1 block w-full border rounded px-3 py-2" rows="3"></textarea>
+          </div>
+        </template>
+
+        <div class="flex items-center justify-end gap-3">
+          <button type="button" class="px-4 py-2 rounded border" @click="close()">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded bg-sky-600 text-white" x-text="submitLabel"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm delete toast -->
+  <div id="toastArea" class="fixed right-6 bottom-6 space-y-3 z-50"></div>
+
+  <script>
+  // =========================
+  // Config / small UX helpers
+  // =========================
+  let API_BASE = document.getElementById('apiBaseInput').value.replace(/\/+$/,'');
+  const API_PREFIX = ''; // caso sua API tenha prefix, ajuste aqui
+
+  function toast(msg, type='info', timeout=3500) {
+    const n = document.createElement('div');
+    n.className = 'bg-white border p-3 rounded shadow flex items-center gap-3';
+    n.innerHTML = '<div class="text-sm">'+msg+'</div>';
+    document.getElementById('toastArea').appendChild(n);
+    setTimeout(()=> n.remove(), timeout);
+  }
+
+  // Pagination state
+  const state = {
+    brands: {page:0,size:10,q:'', items:[]},
+    segments: {page:0,size:10,q:'', items:[]}
+  };
+
+  // Apply API base input
+  document.getElementById('applyApiBase').addEventListener('click', ()=> {
+    API_BASE = document.getElementById('apiBaseInput').value.replace(/\/+$/,'');
+    toast('API base atualizada: ' + API_BASE);
+    loadAll();
+  });
+
+  // =========================
+  // Fetch helpers
+  // =========================
+  async function apiFetch(path, opts={}){
+    const url = API_BASE + (path.startsWith('/') ? path : '/' + path);
+    const resp = await fetch(url, opts);
+    // try parse JSON safely
+    let body = null;
+    try { body = await resp.json(); } catch(e){ body = await resp.text(); }
+    if (!resp.ok) throw {status: resp.status, body};
+    return body;
+  }
+
+  // ==============
+  // BRANDS
+  // ==============
+  async function loadBrands(){
+    const s = state.brands;
+    // if your openapi uses /brand/search for paged search use that; fallback to /brand
+    let qstr = '';
+    if (s.q) qstr = '?q=' + encodeURIComponent(s.q) + '&size=' + s.size + '&page=' + s.page;
+    else qstr = '?size=' + s.size + '&page=' + s.page;
+    try {
+      // try search first
+      const body = await apiFetch('/brand/search' + qstr);
+      s.items = Array.isArray(body) ? body : (body.content || body.items || []);
+    } catch(err){
+      // fallback to /brand
+      try {
+        const list = await apiFetch('/brand');
+        s.items = Array.isArray(list) ? list : (list.content || []);
+      } catch(e){
+        s.items = [];
+        console.error('Erro ao carregar marcas', e);
+        toast('Erro ao carregar marcas (ver console)', 'error');
+      }
+    }
+    renderBrands();
+  }
+
+  function renderBrands(){
+    const container = document.getElementById('brandsList');
+    container.innerHTML = '';
+    const s = state.brands;
+    if (!s.items || s.items.length === 0) {
+      container.innerHTML = '<div class="text-sm text-slate-500">Nenhuma marca encontrada.</div>';
+      document.getElementById('brandsMeta').innerText = '';
+      return;
+    }
+    s.items.forEach(item=>{
+      const card = document.createElement('div');
+      card.className = 'p-3 border rounded flex items-start justify-between';
+      const left = document.createElement('div');
+      left.innerHTML = `<div class="font-medium">${escapeHtml(item.name || item.title || '—')}</div>
+                        <div class="text-sm text-slate-500 mt-1">${escapeHtml(item.description || item.descr || '')}</div>`;
+      const actions = document.createElement('div');
+      actions.className = 'flex gap-2';
+      const edit = document.createElement('button');
+      edit.className = 'px-2 py-1 text-sm border rounded';
+      edit.innerText = 'Editar';
+      edit.onclick = ()=> openModal('brand','edit', item);
+      const del = document.createElement('button');
+      del.className = 'px-2 py-1 text-sm bg-red-600 text-white rounded';
+      del.innerText = 'Excluir';
+      del.onclick = ()=> confirmDelete('/brand/'+(item.id || item.ID || item.brandId), 'brand', item);
+      actions.appendChild(edit);
+      actions.appendChild(del);
+      card.appendChild(left);
+      card.appendChild(actions);
+      container.appendChild(card);
+    });
+    document.getElementById('brandsMeta').innerText = `Mostrando ${s.items.length} — página ${s.page+1}`;
+  }
+
+  // ==============
+  // SEGMENTS
+  // ==============
+  async function loadSegments(){
+    const s = state.segments;
+    let qstr = '';
+    if (s.q) qstr = '?q=' + encodeURIComponent(s.q) + '&size=' + s.size + '&page=' + s.page;
+    else qstr = '?size=' + s.size + '&page=' + s.page;
+    try {
+      const body = await apiFetch('/segment/search' + qstr);
+      s.items = Array.isArray(body) ? body : (body.content || body.items || []);
+    } catch(err){
+      try {
+        const list = await apiFetch('/segment');
+        s.items = Array.isArray(list) ? list : (list.content || []);
+      } catch(e){
+        s.items = [];
+        console.error('Erro ao carregar segmentos', e);
+        toast('Erro ao carregar segmentos (ver console)', 'error');
+      }
+    }
+    renderSegments();
+  }
+
+  function renderSegments(){
+    const container = document.getElementById('segmentsList');
+    container.innerHTML = '';
+    const s = state.segments;
+    if (!s.items || s.items.length === 0) {
+      container.innerHTML = '<div class="text-sm text-slate-500">Nenhum segmento encontrado.</div>';
+      document.getElementById('segmentsMeta').innerText = '';
+      return;
+    }
+    s.items.forEach(item=>{
+      const card = document.createElement('div');
+      card.className = 'p-3 border rounded flex items-start justify-between';
+      const left = document.createElement('div');
+      left.innerHTML = `<div class="font-medium">${escapeHtml(item.name || item.title || '—')}</div>
+                        <div class="text-sm text-slate-500 mt-1">${escapeHtml(item.description || item.descr || '')}</div>`;
+      const actions = document.createElement('div');
+      actions.className = 'flex gap-2';
+      const edit = document.createElement('button');
+      edit.className = 'px-2 py-1 text-sm border rounded';
+      edit.innerText = 'Editar';
+      edit.onclick = ()=> openModal('segment','edit', item);
+      const del = document.createElement('button');
+      del.className = 'px-2 py-1 text-sm bg-red-600 text-white rounded';
+      del.innerText = 'Excluir';
+      del.onclick = ()=> confirmDelete('/segment/'+(item.id || item.ID || item.segmentId), 'segment', item);
+      actions.appendChild(edit);
+      actions.appendChild(del);
+      card.appendChild(left);
+      card.appendChild(actions);
+      container.appendChild(card);
+    });
+    document.getElementById('segmentsMeta').innerText = `Mostrando ${s.items.length} — página ${s.page+1}`;
+  }
+
+  // ==============
+  // Create / Update / Delete
+  // ==============
+  async function createBrand(payload){
+    try {
+      const body = await apiFetch('/brand', {method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      toast('Marca criada com sucesso');
+      loadBrands();
+      return body;
+    } catch(e){ toast('Erro ao criar marca'); console.error(e); }
+  }
+  async function updateBrand(id, payload){
+    try {
+      const body = await apiFetch('/brand/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      toast('Marca atualizada');
+      loadBrands();
+      return body;
+    } catch(e){ toast('Erro ao atualizar marca'); console.error(e); }
+  }
+  async function deleteBrand(id){
+    try {
+      await apiFetch('/brand/'+id, {method:'DELETE'});
+      toast('Marca excluída');
+      loadBrands();
+    } catch(e){ toast('Erro ao excluir marca'); console.error(e); }
+  }
+
+  async function createSegment(payload){
+    try {
+      const body = await apiFetch('/segment', {method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      toast('Segmento criado com sucesso');
+      loadSegments();
+      return body;
+    } catch(e){ toast('Erro ao criar segmento'); console.error(e); }
+  }
+  async function updateSegment(id, payload){
+    try {
+      const body = await apiFetch('/segment/'+id, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      toast('Segmento atualizado');
+      loadSegments();
+      return body;
+    } catch(e){ toast('Erro ao atualizar segmento'); console.error(e); }
+  }
+  async function deleteSegment(id){
+    try {
+      await apiFetch('/segment/'+id, {method:'DELETE'});
+      toast('Segmento excluído');
+      loadSegments();
+    } catch(e){ toast('Erro ao excluir segmento'); console.error(e); }
+  }
+
+  // Confirm delete small dialog in toast area
+  function confirmDelete(path, type, item){
+    const id = (item.id || item.ID || item.brandId || item.segmentId);
+    const msg = document.createElement('div');
+    msg.className = 'bg-white border p-3 rounded shadow max-w-md';
+    msg.innerHTML = `<div class="font-medium mb-2">Confirma exclusão?</div>
+      <div class="text-sm text-slate-600 mb-3">${escapeHtml(item.name || item.title || 'ID: ' + id)}</div>
+      <div class="flex justify-end gap-2">
+        <button class="px-3 py-1 border rounded btn-cancel">Cancelar</button>
+        <button class="px-3 py-1 bg-red-600 text-white rounded btn-confirm">Excluir</button>
+      </div>`;
+    document.getElementById('toastArea').appendChild(msg);
+    msg.querySelector('.btn-cancel').onclick = ()=> msg.remove();
+    msg.querySelector('.btn-confirm').onclick = async ()=>{
+      msg.remove();
+      if (type === 'brand') await deleteBrand(id);
+      if (type === 'segment') await deleteSegment(id);
+    };
+    setTimeout(()=> { if (msg.parentNode) msg.remove() }, 8000);
+  }
+
+  // ==============
+  // Search, pagination controls
+  // ==============
+  document.getElementById('searchBrandBtn').addEventListener('click', ()=> {
+    state.brands.q = document.getElementById('brandSearch').value.trim();
+    state.brands.page = 0;
+    loadBrands();
+  });
+  document.getElementById('prevBrands').addEventListener('click', ()=> {
+    if (state.brands.page>0) state.brands.page--;
+    loadBrands();
+  });
+  document.getElementById('nextBrands').addEventListener('click', ()=> {
+    state.brands.page++;
+    loadBrands();
+  });
+
+  document.getElementById('searchSegmentBtn').addEventListener('click', ()=> {
+    state.segments.q = document.getElementById('segmentSearch').value.trim();
+    state.segments.page = 0;
+    loadSegments();
+  });
+  document.getElementById('prevSegments').addEventListener('click', ()=> {
+    if (state.segments.page>0) state.segments.page--;
+    loadSegments();
+  });
+  document.getElementById('nextSegments').addEventListener('click', ()=> {
+    state.segments.page++;
+    loadSegments();
+  });
+
+  // Open create forms
+  document.getElementById('openBrandCreate').addEventListener('click', ()=> openModal('brand','create'));
+  document.getElementById('openSegmentCreate').addEventListener('click', ()=> openModal('segment','create'));
+
+  // minimal HTML-escape
+  function escapeHtml(s){ if(!s && s !== 0) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+  // ==============
+  // Modal management using Alpine-like API (declared as global)
+  // ==============
+  function modal(){
+    return {
+      open: false,
+      title: '',
+      type: 'brand', // brand | segment
+      mode: 'create',
+      form: {},
+      submitLabel: 'Salvar',
+      openModal(t, mode, item){
+        this.type = t;
+        this.mode = mode;
+        this.title = (mode === 'create' ? 'Criar ' : 'Editar ') + (t === 'brand' ? 'Marca' : 'Segmento');
+        this.submitLabel = mode === 'create' ? 'Criar' : 'Salvar';
+        if (mode === 'edit' && item){
+          this.form = {...item};
+        } else {
+          this.form = {name:'', description:''};
+        }
+        this.open = true;
+      },
+      close(){ this.open = false; },
+      async submit(){
+        try {
+          if (this.type === 'brand'){
+            if (this.mode === 'create') await createBrand(this.form);
+            else {
+              const id = (this.form.id || this.form.ID || this.form.brandId);
+              await updateBrand(id, this.form);
+            }
+          } else {
+            if (this.mode === 'create') await createSegment(this.form);
+            else {
+              const id = (this.form.id || this.form.ID || this.form.segmentId);
+              await updateSegment(id, this.form);
+            }
+          }
+          this.close();
+        } catch(e){
+          toast('Erro ao salvar (ver console)');
+          console.error(e);
+        }
+      }
+    }
+  }
+
+  // Small API to call openModal from outside Alpine scope
+  window.openModal = function(type, mode, item){
+    const AlpineRoot = document.querySelector('[x-data="modal()"]');
+    if (AlpineRoot && AlpineRoot.__x) {
+      // Alpine will handle
+      AlpineRoot.__x.$data.openModal(type, mode, item);
+    } else {
+      // fallback: trigger click on global Alpine data via dispatch
+      const el = document.querySelector('[x-data="modal()"]');
+      if (el && el._x_dataStack) {
+        el._x_dataStack[0].openModal(type, mode, item);
+      }
+    }
+  };
+
+  // helper to call from JS
+  function openModal(type, mode, item){ 
+    const el = document.querySelector('[x-data="modal()"]');
+    if (el && el.__x) el.__x.$data.openModal(type, mode, item);
+    else {
+      // create custom event for Alpine to pick up
+      window.dispatchEvent(new CustomEvent('openModal',{detail:{type,mode,item}}));
+    }
+  }
+
+  // Init — load both lists
+  async function loadAll(){
+    await Promise.all([loadBrands(), loadSegments()]);
+  }
+
+  // Kick off
+  loadAll();
+  </script>
+</body>
+</html>
